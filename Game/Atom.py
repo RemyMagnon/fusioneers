@@ -207,7 +207,7 @@ class Atom():
             Game.remove_atom(self)
 
     def update(self):
-        self.apply_gravity(strength_multiplier=0.85)
+        self.apply_gravity()
         current_speed = math.hypot(self.vx, self.vy)
         if current_speed > optimal_speed_quarks:
             scale_factor = optimal_speed_quarks / current_speed
@@ -244,14 +244,14 @@ class Atom():
             self.decay()
 
 
-    def apply_gravity(self, strength_multiplier=QUARK_ATTRACTION_MULTIPLIER):
+    def apply_gravity(self):
         import Game
         if Game.gravity_active:
             dx = Game.gravity_pos[0] - self.x
             dy = Game.gravity_pos[1] - self.y
             dist = math.hypot(dx, dy)
             if dist > 5:
-                force = (GRAVITY_STRENGTH * strength_multiplier) * GRAVITY(dist)
+                force = GRAVITY_STRENGTH * GRAVITY(dist)
                 self.vx += (dx / dist) * force
                 self.vy += (dy / dist) * force
 
