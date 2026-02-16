@@ -192,7 +192,6 @@ class Atom(Particle):
             self.decay_type = []
             self.info = "Placeholder text."
             self.index = atoms_symbols.index(name)
-
         elif name == "d":
             self.type = "quark"
             self.identity = "down quark"
@@ -211,7 +210,7 @@ class Atom(Particle):
             self.proton_number = 0
             self.neutron_number = 0
             self.half_life = 20
-            self.decays_into = ["p"]
+            self.decays_into = ["H-1"]
             self.decay_type = []
             self.info = "Placeholder text."
             self.index = atoms_symbols.index(name)
