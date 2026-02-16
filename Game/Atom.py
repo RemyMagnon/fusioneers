@@ -1,4 +1,3 @@
-# Updated Nucleon subclass
 import random
 import pygame
 import math
@@ -36,7 +35,8 @@ atoms_symbols = [
         "O-18",
         "F-19",
         "F-18",
-        "Ne-20"]
+        "Ne-20"
+]
 
 
 atoms_name = [
@@ -69,7 +69,8 @@ atoms_name = [
         "Oxygen-18",
         "Fluorine-19",
         "Fluorine-18",
-        "Neon-20"]
+        "Neon-20"
+]
 
 
 atoms_size = [
@@ -102,7 +103,8 @@ atoms_size = [
     13.65,
     14.5,
     14.0,
-    15.0]
+    15.0
+]
 
 
 atoms_color = [
@@ -135,42 +137,8 @@ atoms_color = [
     (255, 13, 13),
     (144, 224, 80),
     (144, 224, 80),
-    (179, 227, 245)]
-
-
-atoms_label = [
-    "u",
-    "d",
-    "n",
-    "¹H",
-    "²H",
-    "³H",
-    "³He",
-    "⁴He",
-    "⁶Li",
-    "⁷Li",
-    "⁷Be",
-    "¹⁰B",
-    "¹⁰Be",
-    "¹¹B",
-    "¹⁰C",
-    "¹¹C",
-    "¹³N",
-    "¹⁴O",
-    "¹²C",
-    "¹³C",
-    "¹⁴C",
-    "¹⁴N",
-    "¹⁵N",
-    "¹⁶O",
-    "¹⁵O",
-    "¹⁷O",
-    "¹⁸O",
-    "¹⁹F",
-    "¹⁸F",
-    "²⁰Ne"
+    (179, 227, 245)
 ]
-
 
 
 class Atom():
@@ -250,54 +218,31 @@ class Atom():
         self.y += self.vy
 
         # Bounce off circular world border centered on the camera
-        try:
-            import Game
+        # Distance from particle to world center
+        dx = self.x - WIDTH / 2
+        dy = self.y - HEIGHT / 2
+        dist = math.hypot(dx, dy)
 
-            # World center (where the border is actually located)
-            world_center_x = WIDTH / 2
-            world_center_y = HEIGHT / 2
+        # If particle is outside the border (taking its radius into account), push it back
+        if dist + self.radius > (BORDER_RADIUS - BORDER_THICKNESS):
+            nx = dx / dist
+            ny = dy / dist
+            overlap = dist + self.radius - (BORDER_RADIUS - BORDER_THICKNESS)
 
-            # Distance from particle to world center
-            dx = self.x - world_center_x
-            dy = self.y - world_center_y
-            dist = math.hypot(dx, dy)
+            # Move particle just inside the border
+            self.x -= nx * overlap
+            self.y -= ny * overlap
 
-            if dist == 0:
-                return
-
-            # If particle is outside the border (taking its radius into account), push it back
-            if dist + self.radius > (BORDER_RADIUS - BORDER_THICKNESS):
-                nx = dx / dist
-                ny = dy / dist
-                overlap = dist + self.radius - (
-                            BORDER_RADIUS - BORDER_THICKNESS)
-
-                # Move particle just inside the border
-                self.x -= nx * overlap
-                self.y -= ny * overlap
-
-                # Reflect velocity about the normal and apply a small damping
-                v_dot_n = self.vx * nx + self.vy * ny
-                if v_dot_n > 0:
-                    self.vx -= 2 * v_dot_n * nx
-                    self.vy -= 2 * v_dot_n * ny
-
-                    # Add variation to the bounce
-                    self.vx *= random.uniform(0.95, 1.1)
-                    self.vy *= random.uniform(0.95, 1.1)
-        except Exception:
-            # If Game or camera not available, fall back to simple modulo wrap
-            self.x %= WIDTH
-            self.y %= HEIGHT
+            # Reflect velocity about the normal
+            v_dot_n = self.vx * nx + self.vy * ny
+            self.vx -= 2 * v_dot_n * nx
+            self.vy -= 2 * v_dot_n * ny
 
         self.half_life -= 1/60
 
         if self.half_life <= 0:
             self.decay()
 
-        if self.type == "atom" and self.half_life < float("inf"):
-            pass
-            # print(self.half_life)
 
     def apply_gravity(self, strength_multiplier=QUARK_ATTRACTION_MULTIPLIER):
         import Game
@@ -309,6 +254,7 @@ class Atom():
                 force = (GRAVITY_STRENGTH * strength_multiplier) * GRAVITY(dist)
                 self.vx += (dx / dist) * force
                 self.vy += (dy / dist) * force
+
 
     def draw(self, surface):
         import Game
@@ -332,33 +278,6 @@ class Atom():
         text = dynamic_font.render(atoms_symbols[self.index], True, color)
         rect = text.get_rect(center=(sx+x_offset, sy+y_offset))
         surface.blit(text, rect)
-    
-    def _generate_label(self):
-
-        return atoms_label[self.index]
-
-        """Generate a label with superscript notation for the atom."""
-        superscript_map = {
-            '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-            '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
-        }
-    
-        if self.type == "neutron":
-            return "n"
-        
-        if self.type == "atom":
-            if self.name == "H-1":
-                return "P"
-            # Extract element symbol and mass number from name (e.g., "H-1" -> "H", "1")
-            parts = self.name.split('-')
-            if len(parts) == 2:
-                element = parts[0]
-                mass_num = parts[1]
-                # Convert mass number to superscript
-                superscript_mass = ''.join(superscript_map.get(digit, digit) for digit in mass_num)
-                return f"{superscript_mass}{element}"
-        
-        return self.name
 
 
     @staticmethod
