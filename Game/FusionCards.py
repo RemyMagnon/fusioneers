@@ -1,6 +1,4 @@
-import pygame
 from Atom import *
-import radioactivedecay as rd
 from Constants import *
 
 atom_full_data = [

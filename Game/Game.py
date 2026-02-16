@@ -3,11 +3,9 @@ import random
 import math
 from Constants import *
 from Quark import Quark
-from Nucleon import Nucleon
 from Atom import Atom, atoms_symbols
 from FusionCards import Discoveries, atoms_discovered
 from collection import show_collection, badges_rects
-import os
 
 
 pygame.init()
@@ -168,7 +166,7 @@ def apply_cluster_attraction(nucleon, particles, max_force=-0.01, min_distance=2
     my_center_y = sum(q.y for q in my_cluster) / len(my_cluster)
 
     for other in particles:
-        if isinstance(other, Nucleon) and other.name == "H-1" and other not in my_cluster:
+        if isinstance(other, Atom) and other.name == "H-1" and other not in my_cluster:
             other_cluster = [other]
             other_center_x = sum(q.x for q in other_cluster) / len(other_cluster)
             other_center_y = sum(q.y for q in other_cluster) / len(other_cluster)
@@ -227,7 +225,7 @@ def check_quarks_merging():
                 #print("Merged quarks: " + group[0].flavor + " and " + group[1].flavor)
                 #print("Merged :", name)
 
-                particles.append(Nucleon(name,avg_x, avg_y))
+                particles.append(Atom(name,avg_x, avg_y, 0))
 
                 if name in atoms_symbols:
                     index = atoms_symbols.index(name)
@@ -465,6 +463,10 @@ while running:
     check_quarks_merging()
     check_atom_merging()
     screen.blit(book_img, (20,20))
+
+    fps_value = clock.get_fps()
+    fps_text = font.render(f"FPS: {fps_value:.2f}", True, (255, 255, 255))
+    screen.blit(fps_text, (10, 10))
 
     pygame.display.flip()
 

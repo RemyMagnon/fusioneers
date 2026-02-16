@@ -4,7 +4,6 @@ import math
 import pygame
 from Constants import *
 from Particle import Particle
-from Atom import atoms_symbols
 
 class Quark(Particle):
     def __init__(self, flavor):

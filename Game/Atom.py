@@ -5,7 +5,6 @@ import math
 from Constants import *
 from Particle import Particle
 import radioactivedecay as rd
-from enum import Enum, auto
 import numpy as np
 
 atoms_symbols = [

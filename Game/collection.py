@@ -1,5 +1,3 @@
-import pygame
-from Constants import *
 from Atom import *
 from FusionCards import atoms_discovered
 
