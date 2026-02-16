@@ -4,17 +4,9 @@ import math
 from Constants import *
 
 class Particle:
-    def __init__(self, x=None, y=None, radius=8):
-        if x is not None:
-            self.x = x
-        else:
-            self.x = random.uniform(0, WIDTH)
-
-        if y is not None:
-            self.y = y
-        else:
-            self.y = random.uniform(0, HEIGHT)
-
+    def __init__(self, x=random.uniform(0, WIDTH), y=random.uniform(0, HEIGHT), radius=8):
+        self.x = x
+        self.y = y
         self.vx = random.uniform(-1, 1)
         self.vy = random.uniform(-1, 1)
         self.radius = radius
