@@ -2,7 +2,6 @@ import pygame
 import random
 import math
 from Constants import *
-from Quark import Quark
 from Atom import Atom, atoms_symbols
 from FusionCards import Discoveries, atoms_discovered
 from collection import show_collection, badges_rects
@@ -194,7 +193,7 @@ def apply_cluster_attraction(nucleon, particles, max_force=-0.01, min_distance=2
 
 # ---------------- MERGING ----------------
 def check_quarks_merging():
-    quarks = [p for p in particles if isinstance(p, Quark)]
+    quarks = [p for p in particles if (p.name == "u" or p.name == "d")]
 
     for i in range(len(quarks)):
         cluster = []
@@ -208,13 +207,13 @@ def check_quarks_merging():
         if len(cluster) >= 3:
             group = cluster[:3]
 
-            if all(q.speed() < MERGE_SPEED_THRESHOLD for q in group):
+            if all(math.hypot(q.vx, q.vy) < MERGE_SPEED_THRESHOLD for q in group):
 
-                flavors = [q.flavor for q in group]
+                flavors = [q.name for q in group]
 
-                if flavors.count("up") == 2 and flavors.count("down") == 1:
+                if flavors.count("u") == 2 and flavors.count("d") == 1:
                     name = "H-1"
-                elif flavors.count("down") == 2 and flavors.count("up") == 1:
+                elif flavors.count("d") == 2 and flavors.count("u") == 1:
                     name = "n"
                 else:
                     continue
@@ -225,7 +224,7 @@ def check_quarks_merging():
                 #print("Merged quarks: " + group[0].flavor + " and " + group[1].flavor)
                 #print("Merged :", name)
 
-                particles.append(Atom(name,avg_x, avg_y, 0))
+                particles.append(Atom(name,avg_x, avg_y))
 
                 if name in atoms_symbols:
                     index = atoms_symbols.index(name)
@@ -239,9 +238,9 @@ def check_quarks_merging():
                     q.destroy = True
 
                 # Spawn exactly three new quarks on merge
-                new_quarks = ["up", "down", random.choice(["up", "down"])]
+                new_quarks = ["u", "d", random.choice(["u", "d"])]
                 for i in range(3):
-                    new_q = Quark(new_quarks[i])
+                    new_q = Atom(new_quarks[i], random.uniform(0, WIDTH), random.uniform(0, HEIGHT))
                     new_q.x = random.uniform(-WIDTH/2, WIDTH/2)
                     new_q.y = random.uniform(-HEIGHT/2, HEIGHT/2)
 
@@ -287,7 +286,7 @@ def check_atom_merging():
                 #print("Merged atoms: " + group[0].name + " and " + group[1].name)
                 #print("Merged :", name)
 
-                particles.append(Atom(name, avg_x, avg_y, 10))
+                particles.append(Atom(name, avg_x, avg_y))
 
                 new_discovery = Discoveries(name)
                 if not atoms_discovered[atoms_symbols.index(name)]:
@@ -302,9 +301,9 @@ def check_atom_merging():
             break
 
 @staticmethod
-def add_atom(name, x, y, radius):
+def add_atom(name, x, y):
     if name in atoms_symbols:
-        particles.append(Atom(name, x, y, radius))
+        particles.append(Atom(name, x, y))
 
 @staticmethod
 def remove_atom(atom):
@@ -312,9 +311,9 @@ def remove_atom(atom):
 
 # ---------------- INIT ----------------
 for _ in range(int(NUM_QUARKS/2)):
-    particles.append(Quark("up"))
+    particles.append(Atom("u", random.uniform(0, WIDTH), random.uniform(0, HEIGHT)))
 for _ in range(int(NUM_QUARKS / 2)):
-    particles.append(Quark("down"))
+    particles.append(Atom("d", random.uniform(0, WIDTH), random.uniform(0, HEIGHT)))
 
 #------------- COLLECTION --------------
 book_img = pygame.image.load('book.png').convert_alpha()

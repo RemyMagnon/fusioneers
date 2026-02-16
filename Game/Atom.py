@@ -3,7 +3,6 @@ import random
 import pygame
 import math
 from Constants import *
-from Particle import Particle
 import radioactivedecay as rd
 import numpy as np
 
@@ -74,8 +73,8 @@ atoms_name = [
 
 
 atoms_size = [
-    1.0,
-    1.0,
+    2.5,
+    2.5,
     5.0,
     5.0,
     10.7,
@@ -107,8 +106,8 @@ atoms_size = [
 
 
 atoms_color = [
-    (128, 128, 128),
-    (128, 128, 128),
+    (255, 50, 50),
+    (50, 50, 255),
     (128, 128, 128),
     (255, 255, 255),
     (255, 255, 255),
@@ -174,8 +173,8 @@ atoms_label = [
 
 
 
-class Atom(Particle):
-    def __init__(self, name, x, y, radius):
+class Atom():
+    def __init__(self, name, x=random.uniform(0, WIDTH), y=random.uniform(0, HEIGHT)):
         self.vx = random.uniform(-1, 1)
         self.vy = random.uniform(-1, 1)
         self.name = name
@@ -225,12 +224,18 @@ class Atom(Particle):
             self.info = "Placeholder text."
             self.index = atoms_symbols.index(name)
             self.half_life = np.log(self.identity.half_life())
-        super().__init__(x, y, atoms_size[self.index] * 3)
+
+        self.x = x
+        self.y = y
+        self.vx = random.uniform(-1, 1)
+        self.vy = random.uniform(-1, 1)
+        self.radius = atoms_size[self.index] * 3
+        self.destroy = False
 
     def decay(self):
         if len(self.decays_into) > 0:
             import Game
-            Game.add_atom(self.decays_into[0], self.x, self.y, self.radius)
+            Game.add_atom(self.decays_into[0], self.x, self.y)
             Game.remove_atom(self)
 
     def update(self):
@@ -240,7 +245,50 @@ class Atom(Particle):
             scale_factor = optimal_speed_quarks / current_speed
             self.vx *= scale_factor
             self.vy *= scale_factor
-        self.update_position()
+
+        self.x += self.vx
+        self.y += self.vy
+
+        # Bounce off circular world border centered on the camera
+        try:
+            import Game
+
+            # World center (where the border is actually located)
+            world_center_x = WIDTH / 2
+            world_center_y = HEIGHT / 2
+
+            # Distance from particle to world center
+            dx = self.x - world_center_x
+            dy = self.y - world_center_y
+            dist = math.hypot(dx, dy)
+
+            if dist == 0:
+                return
+
+            # If particle is outside the border (taking its radius into account), push it back
+            if dist + self.radius > (BORDER_RADIUS - BORDER_THICKNESS):
+                nx = dx / dist
+                ny = dy / dist
+                overlap = dist + self.radius - (
+                            BORDER_RADIUS - BORDER_THICKNESS)
+
+                # Move particle just inside the border
+                self.x -= nx * overlap
+                self.y -= ny * overlap
+
+                # Reflect velocity about the normal and apply a small damping
+                v_dot_n = self.vx * nx + self.vy * ny
+                if v_dot_n > 0:
+                    self.vx -= 2 * v_dot_n * nx
+                    self.vy -= 2 * v_dot_n * ny
+
+                    # Add variation to the bounce
+                    self.vx *= random.uniform(0.95, 1.1)
+                    self.vy *= random.uniform(0.95, 1.1)
+        except Exception:
+            # If Game or camera not available, fall back to simple modulo wrap
+            self.x %= WIDTH
+            self.y %= HEIGHT
 
         self.half_life -= 1/60
 
@@ -250,6 +298,17 @@ class Atom(Particle):
         if self.type == "atom" and self.half_life < float("inf"):
             pass
             # print(self.half_life)
+
+    def apply_gravity(self, strength_multiplier=QUARK_ATTRACTION_MULTIPLIER):
+        import Game
+        if Game.gravity_active:
+            dx = Game.gravity_pos[0] - self.x
+            dy = Game.gravity_pos[1] - self.y
+            dist = math.hypot(dx, dy)
+            if dist > 5:
+                force = (GRAVITY_STRENGTH * strength_multiplier) * GRAVITY(dist)
+                self.vx += (dx / dist) * force
+                self.vy += (dy / dist) * force
 
     def draw(self, surface):
         import Game
