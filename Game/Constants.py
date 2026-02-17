@@ -3,9 +3,8 @@ WIDTH = 1500
 HEIGHT = 800
 
 #====== Border Info =====
-#The Radius is only 40% of the height
-BORDER_RADIUS = HEIGHT/2 * 1.3
-OUTER_BORDER_RADIUS = BORDER_RADIUS * 9.
+BORDER_RADIUS = HEIGHT * 0.65
+OUTER_BORDER_RADIUS = BORDER_RADIUS * 9
 BORDER_COLOR = (200,250,250)
 
 BORDER_THICKNESS = 20
@@ -23,24 +22,11 @@ GRAVITY_RANGE = 20
 GRAVITY_STRENGTH = 120
 optimal_speed_quarks = 2
 
-# ===== FORCES ===== 
-
-def GRAVITY(dist):
-    return 2.72**(-dist / GRAVITY_RANGE) / dist
-
-# ===== FONTS =====
-
-TITLE_FONT = "Verdana"
-TITLE_FONT_SIZE = 24
-TEXT_FONT = "Arial"
-TEXT_FONT_SIZE = 18
-
 # ===== Camera =====
-DEFAULT_ZOOM = 1.0
+DEFAULT_ZOOM = 1.2
 ZOOM_MIN = 0.3
 ZOOM_MAX = 5.0
 ZOOM_STEP = 1.03
-
 
 DISTANCE_MULTIPLIER = 0.6
 MAX_OFFSET = 1200

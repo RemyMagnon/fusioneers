@@ -1,10 +1,9 @@
 from Atom import *
-from Constants import *
 
 atom_full_data = [
-    ["Stable", "N/A", 1964,
+    ["Stable (inside of a nucleon)", "N/A", 1964,
      "The lightest of all quarks; it makes protons stable."],
-    ["Stable", "N/A", 1964,
+    ["Stable (inside of a nucleon)", "N/A", 1964,
      "Slightly heavier than the Up quark; it helps make neutrons."],
     ["Unstable", "611.0 s", 1932,
      "Made of two down quarks and one up quark, free neutrons decay in about 15 minutes."],
@@ -13,7 +12,7 @@ atom_full_data = [
     ["Stable", "N/A", 1931,
      "Also called deuterium, this isotope is used in heavy water for nuclear fusion."],
     ["Unstable", "12.32 y", 1934,
-     "This atom, also called tritium, is used to make watch hands glow. It is the smallest element that undergoes beta decay."],
+     "Also called tritium, it is used to make watch hands glow. It is the smallest element that undergoes beta decay."],
     ["Stable", "N/A", 1939,
      "Much rarer than its counterpart He-4, it is theoretically a good source of fusion energy."],
     ["Stable", "N/A", 1895,
@@ -64,44 +63,44 @@ atom_full_data = [
      "The first isotope ever discovered (in 1913); it glows red-orange in signs."]
 ]
 
-atoms_discovered = [False] * 30
+atoms_discovered = [True] * 2 + [False] * 28
 
+def new_discovery(name):
+    index = atoms_symbols.index(name)
+    if not atoms_discovered[index]:
+        atoms_discovered[index] = True
+        discovery = Popup(name)
+        discovery.is_visible = True
+        return discovery
+    return None
+
+width = 400
+height = 250
+line_spacing = 30
+padding = 15
+header_height = 40
+
+TEXT_FONT = pygame.font.SysFont("Arial", 18)
+TITLE_FONT = pygame.font.SysFont("Verdana", 24, bold=True)
 
 class Popup:
-    def __init__(self, x, y, width, height, title, text, stability, halflife,
-                 year, color):
+    def __init__(self, name, x=width * 2.6, y=height * 0.2):
         self.rect = pygame.Rect(x, y, width, height)
-        self.color = (200, 200, 200)  # Light Gray
-        self.title = title
-        self.text = text
+        self.exit_button = pygame.Rect(x + header_height / 4, y + header_height / 4, 20, 20)
+        self.index = atoms_symbols.index(name)
         self.is_visible = False
-        self.line_spacing = 30
-        self.padding = 15
-        self.color = color
-        self.body_color = (30, 30, 45)
-        self.header_height = 40
-        self.exit_button = pygame.Rect(self.rect.x + self.header_height / 4,
-                                       self.rect.y + self.header_height / 4,
-                                       20, 20)
 
-        self.title_font = pygame.font.SysFont(TITLE_FONT, TITLE_FONT_SIZE,
-                                              bold=True)
-        self.font = pygame.font.SysFont(TEXT_FONT, TEXT_FONT_SIZE)
-
-        self.stability = stability
-        self.halflife = halflife
-        self.year = year
 
     def get_wrapped_lines(self):
-        words = self.text.split(' ')
+        words = atom_full_data[self.index][3].split(' ')
         lines = []
         current_line = ""
-        max_text_width = self.rect.width - (self.padding * 2)
+        max_text_width = self.rect.width - padding * 2
 
         for word in words:
             # Check if adding the next word exceeds the width
             test_line = current_line + word + " "
-            if self.font.size(test_line)[0] < max_text_width:
+            if TEXT_FONT.size(test_line)[0] < max_text_width:
                 current_line = test_line
             else:
                 lines.append(current_line)
@@ -111,88 +110,80 @@ class Popup:
         return lines
 
     def draw(self, screen):
-        if self.is_visible:
-            # Shadow effect
-            shadow_offset = 7
-            shadow_rect = self.rect.move(shadow_offset, shadow_offset)
-            pygame.draw.rect(screen, self.color, shadow_rect, border_radius=15)
-            pygame.draw.rect(screen, self.color, (self.rect.x + shadow_offset,
-                                                  self.rect.y + shadow_offset,
-                                                  self.rect.width,
-                                                  self.header_height))
+        # Shadow effect
+        shadow_offset = 7
+        shadow_rect = self.rect.move(shadow_offset, shadow_offset)
+        pygame.draw.rect(screen, atoms_color[self.index], shadow_rect, border_radius=15)
+        pygame.draw.rect(screen, atoms_color[self.index], (self.rect.x + shadow_offset,
+                                              self.rect.y + shadow_offset,
+                                              self.rect.width,
+                                              header_height))
 
-            # Main Box
-            pygame.draw.rect(screen, self.body_color, self.rect,
-                             border_radius=15)
-            pygame.draw.rect(screen, (255, 255, 255), self.rect, 2,
-                             border_radius=15)  # Border
+        # Main Box
+        pygame.draw.rect(screen, (30, 30, 45), self.rect, border_radius=15)
+        pygame.draw.rect(screen, (255, 255, 255), self.rect, 2, border_radius=15)  # Border
 
-            # Render Wrapped Text
-            lines = self.get_wrapped_lines()
-            for i, line in enumerate(lines):
-                line_surf = self.font.render(line.strip(), True,
-                                             (255, 255, 255))
-                # Position each line based on its index
-                line_y = self.rect.y + self.header_height + self.padding + (
-                        i * self.line_spacing)
+        # Render Wrapped Text
+        lines = self.get_wrapped_lines()
+        for i, line in enumerate(lines):
+            line_surf = TEXT_FONT.render(line.strip(), True,
+                                         (255, 255, 255))
+            # Position each line based on its index
+            line_y = self.rect.y + header_height + padding + i * line_spacing
 
-                # Check to make sure we don't draw outside the box bottom
-                if line_y < self.rect.bottom - self.padding:
-                    screen.blit(line_surf,
-                                (self.rect.x + self.padding, line_y))
+            # Check to make sure we don't draw outside the box bottom
+            if line_y < self.rect.bottom - padding:
+                screen.blit(line_surf, (self.rect.x + padding, line_y))
 
-            # ... (after your existing for loop that renders lines) ...
+        # ... (after your existing for loop that renders lines) ...
 
-            # 1. Get the starting Y position for the extra data
-            # We'll put it 2 lines below the last line of the main text
-            current_data_y = line_y + (self.line_spacing * 2)
+        # 1. Get the starting Y position for the extra data
+        # We'll put it 2 lines below the last line of the main text
+        current_data_y = line_y + line_spacing * 2
 
-            extra_info = [
-                f"Stability: {self.stability}",
-                f"Half-life: {self.halflife}",
-                f"Discovered: {self.year}"
-            ]
+        extra_info = [
+            f"Stability: {atom_full_data[self.index][0]}",
+            f"Half-life: {atom_full_data[self.index][1]}",
+            f"Discovered: {atom_full_data[self.index][2]}"
+        ]
 
-            # 3. Draw the extra lines
-            for j, info_text in enumerate(extra_info):
-                # We use a slightly different color (e.g., light blue) to make it look like "data"
-                info_surf = self.font.render(info_text, True, (180, 255, 255))
-                info_y = current_data_y + (j * self.line_spacing)
+        # 3. Draw the extra lines
+        for j, info_text in enumerate(extra_info):
+            # We use a slightly different color (e.g., light blue) to make it look like "data"
+            info_surf = TEXT_FONT.render(info_text, True, (180, 255, 255))
+            info_y = current_data_y + j * line_spacing
 
-                if info_y < self.rect.bottom - self.padding:
-                    screen.blit(info_surf,
-                                (self.rect.x + self.padding, info_y))
+            if info_y < self.rect.bottom - padding:
+                screen.blit(info_surf, (self.rect.x + padding, info_y))
 
-            # Title box
+        # Title box
+        header_rect = pygame.Rect(self.rect.x, self.rect.y, self.rect.width, header_height)
+        pygame.draw.rect(screen, atoms_color[self.index], header_rect)
+        pygame.draw.line(screen, (255, 255, 255),
+                         (self.rect.x, self.rect.y + header_height),
+                         (self.rect.right - 1,
+                          self.rect.y + header_height), 2)
 
-            header_rect = pygame.Rect(self.rect.x, self.rect.y,
-                                      self.rect.width, self.header_height)
-            pygame.draw.rect(screen, self.color, header_rect)
-            pygame.draw.line(screen, (255, 255, 255),
-                             (self.rect.x, self.rect.y + self.header_height),
-                             (self.rect.right - 1,
-                              self.rect.y + self.header_height), 2)
+        # Title text
+        title_surf = TITLE_FONT.render(atoms_name[self.index], True, atoms_text_color[self.index])
+        title_rect = title_surf.get_rect(center=header_rect.center)
+        screen.blit(title_surf, title_rect)
 
-            # Title text
-            title_surf = self.title_font.render(self.title, True, (0, 0, 0))
-            title_rect = title_surf.get_rect(center=header_rect.center)
-            screen.blit(title_surf, title_rect)
-
-            # exit button
-            pygame.draw.rect(screen, (0, 0, 0), self.exit_button)
-            # Line 1: Top-left to bottom-right
-            x_margin = 5
-            pygame.draw.line(screen, (255, 255, 255),
-                             (self.exit_button.x + x_margin,
-                              self.exit_button.y + x_margin),
-                             (self.exit_button.right - x_margin,
-                              self.exit_button.bottom - x_margin), 3)
-            # Line 2: Top-right to bottom-left
-            pygame.draw.line(screen, (255, 255, 255),
-                             (self.exit_button.right - x_margin,
-                              self.exit_button.y + x_margin),
-                             (self.exit_button.x + x_margin,
-                              self.exit_button.bottom - x_margin), 3)
+        # exit button
+        pygame.draw.rect(screen, (0, 0, 0), self.exit_button)
+        # Line 1: Top-left to bottom-right
+        x_margin = 5
+        pygame.draw.line(screen, (255, 255, 255),
+                         (self.exit_button.x + x_margin,
+                          self.exit_button.y + x_margin),
+                         (self.exit_button.right - x_margin,
+                          self.exit_button.bottom - x_margin), 3)
+        # Line 2: Top-right to bottom-left
+        pygame.draw.line(screen, (255, 255, 255),
+                         (self.exit_button.right - x_margin,
+                          self.exit_button.y + x_margin),
+                         (self.exit_button.x + x_margin,
+                          self.exit_button.bottom - x_margin), 3)
 
     def toggle(self):
         self.is_visible = not self.is_visible
@@ -203,22 +194,3 @@ class Popup:
                 # Check if the click position is inside your exit_square
                 if self.exit_button.collidepoint(event.pos):
                     self.is_visible = False
-
-
-class Discoveries(Popup):
-    def __init__(self, element, x=None, y=None):
-        index = atoms_symbols.index(element)
-        WIDTH = 400
-        HEIGHT = 250
-        if x == None and y == None:
-            super().__init__((WIDTH * 2.4), (HEIGHT * 0.2), WIDTH, HEIGHT,
-                             atoms_name[index], atom_full_data[index][3],
-                             atom_full_data[index][0],
-                             atom_full_data[index][1],
-                             atom_full_data[index][2], atoms_color[index])
-        else:
-            super().__init__(x, y, WIDTH, HEIGHT,
-                             atoms_name[index], atom_full_data[index][3],
-                             atom_full_data[index][0],
-                             atom_full_data[index][1],
-                             atom_full_data[index][2], atoms_color[index])

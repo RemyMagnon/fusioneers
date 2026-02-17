@@ -1,13 +1,14 @@
 import pygame
 import random
 import math
-from Constants import *
-from Atom import Atom, atoms_symbols
-from FusionCards import Discoveries, atoms_discovered
-from collection import show_collection, badges_rects
-
 
 pygame.init()
+
+import FusionCards
+from Constants import *
+from Atom import Atom, atoms_symbols
+from collection import show_collection, badges_rects
+
 
 pygame.mixer.init()
 tone = pygame.mixer.Sound("100hz_tone.wav")
@@ -53,10 +54,8 @@ def clamp_camera():
     max_camera_offset = MAX_OFFSET / camera_zoom
     
     # Clamp camera position to stay within bounds of world center
-    camera_x = max(world_center_x - max_camera_offset, 
-                   min(world_center_x + max_camera_offset, camera_x))
-    camera_y = max(world_center_y - max_camera_offset, 
-                   min(world_center_y + max_camera_offset, camera_y))
+    camera_x = max(world_center_x - max_camera_offset,  min(world_center_x + max_camera_offset, camera_x))
+    camera_y = max(world_center_y - max_camera_offset,  min(world_center_y + max_camera_offset, camera_y))
     
 def cursor_follow_camera(mouse_pos):
     global camera_x, camera_y
@@ -139,9 +138,6 @@ def resolve_collision(a, b):
         dvy = a.vy - b.vy
         impact_speed = dvx * nx + dvy * ny
 
-        if impact_speed > 0:
-            return
-
         impulse = -impact_speed
         a.vx += impulse * nx
         a.vy += impulse * ny
@@ -192,6 +188,108 @@ def apply_cluster_attraction(nucleon, particles, max_force=-0.01, min_distance=2
 
 
 # ---------------- MERGING ----------------
+
+"""
+def check_merge():
+
+    for i in range(len(particles)):
+        cluster = [particles[i]]
+        types = [particles[i].name]
+
+        for j in range(len(particles)):
+
+            dx = particles[i].x - particles[j].x
+            dy = particles[i].y - particles[j].y
+            if (((particles[i].is_quark and particles[j].is_quark) or (not particles[i].is_quark and not particles[j].is_quark))
+                    and particles[i] != particles[j]
+                    and math.hypot(dx, dy) <= particles[i].radius + particles[j].radius):
+                cluster.append((particles[j]))
+                types.append(particles[j].name)
+
+            if len(cluster) == 3 and cluster[0].is_quark:
+                if types.count("u") == 0 or types.count("d") == 0:
+                    cluster.remove(particles[j])
+                else:
+                    avg_x = sum(quark.x for quark in cluster) / 3
+                    avg_y = sum(quark.y for quark in cluster) / 3
+
+                    if types.count("u") >= 2:
+                        name = "H-1"
+                    else:
+                        name = "n"
+
+                    add_atom(name, avg_x, avg_y)
+                    Popup.new_discovery(name)
+
+                    for quark in cluster:
+                        remove_atom(quark)
+
+                    # Spawn exactly three new quarks on merge
+                    new_quarks = ["u", "d", random.choice(["u", "d"])]
+                    for k in range(3):
+                        distance = random.uniform(0, BORDER_RADIUS)
+                        angle = random.uniform(0, 2 * math.pi)
+                        new_x = distance * math.cos(angle)
+                        new_y = distance * math.sin(angle)
+                        add_atom(new_quarks[k], new_x, new_y)
+
+                    break
+
+            if len(cluster) == 2 and not cluster[0].is_quark:
+                name = Atom.merge(cluster[0], cluster[1])
+
+                if name in atoms_symbols:
+                    avg_x = sum(atom.x for atom in cluster) / 2
+                    avg_y = sum(atom.y for atom in cluster) / 2
+
+                    add_atom(name, avg_x, avg_y)
+                    Popup.new_discovery(name)
+
+                    for quark in cluster:
+                        remove_atom(quark)
+
+                    break
+"""
+
+
+
+def check_atom_merging():
+    atoms = [p for p in particles if (isinstance(p, Atom) and not p.is_quark())]
+
+    for i in range(len(atoms)):
+        cluster = []
+
+        for j in range(len(atoms)):
+            dx = atoms[i].x - atoms[j].x
+            dy = atoms[i].y - atoms[j].y
+            if math.hypot(dx, dy) <= atoms[i].radius + atoms[j].radius:
+                cluster.append(atoms[j])
+        
+        if len(cluster) >= 2:
+            group = cluster[:2]
+
+            name = group[0].merge(group[1])
+            
+            if name is not None and name in atoms_symbols:
+
+                avg_x = sum(q.x for q in group) / len(group)
+                avg_y = sum(q.y for q in group) / len(group)
+
+                #print("Merged atoms: " + group[0].name + " and " + group[1].name)
+                #print("Merged :", name)
+
+                add_atom(name, avg_x, avg_y)
+                discovery = FusionCards.new_discovery(name)
+                if discovery is not None:
+                    popup.append(discovery)
+
+                for q in group:
+                    remove_atom(q)
+
+                break
+
+
+
 def check_quarks_merging():
     quarks = [p for p in particles if (p.name == "u" or p.name == "d")]
 
@@ -224,81 +322,23 @@ def check_quarks_merging():
                 #print("Merged quarks: " + group[0].flavor + " and " + group[1].flavor)
                 #print("Merged :", name)
 
-                particles.append(Atom(name,avg_x, avg_y))
-
-                if name in atoms_symbols:
-                    index = atoms_symbols.index(name)
-                    if not atoms_discovered[index]:
-                        atoms_discovered[index] = True
-                        new_discovery = Discoveries(name)
-                        new_discovery.is_visible = True
-                        popup.append(new_discovery)
+                add_atom(name, avg_x, avg_y)
+                discovery = FusionCards.new_discovery(name)
+                if discovery is not None:
+                    popup.append(discovery)
 
                 for q in group:
-                    q.destroy = True
+                    remove_atom(q)
 
                 # Spawn exactly three new quarks on merge
-                new_quarks = ["u", "d", random.choice(["u", "d"])]
-                for i in range(3):
-                    new_q = Atom(new_quarks[i], random.uniform(0, WIDTH), random.uniform(0, HEIGHT))
-                    new_q.x = random.uniform(-WIDTH/2, WIDTH/2)
-                    new_q.y = random.uniform(-HEIGHT/2, HEIGHT/2)
-
+                for name in ["u", "d", random.choice(["u", "d"])]:
+                    distance = random.uniform(0, BORDER_RADIUS)
                     angle = random.uniform(0, 2 * math.pi)
-                    speed = random.uniform(1, 3)
-                    new_q.vx = math.cos(angle) * speed
-                    new_q.vy = math.sin(angle) * speed
-
-                    particles.append(new_q)
+                    add_atom(name, WIDTH/2 + distance * math.cos(angle), HEIGHT/2 + distance * math.sin(angle))
 
                 break
 
-def check_atom_merging():
-    atoms = [p for p in particles if isinstance(p, Atom)]
 
-    for i in range(len(atoms)):
-        cluster = []
-
-        for j in range(len(atoms)):
-            dx = atoms[i].x - atoms[j].x
-            dy = atoms[i].y - atoms[j].y
-            if math.hypot(dx, dy) <= atoms[i].radius + atoms[j].radius:
-                cluster.append(atoms[j])
-        
-        if len(cluster) >= 2:
-            group = cluster[:2]
-
-            # Only consider merging if they are different types (proton vs neutron)
-            name = Atom.merge(group[0], group[1])
-            
-            if name != None and name in atoms_symbols:
-
-                """for i in range(len(already_merged)):
-                    if name == already_merged[i]:
-                        # turn color of the grid into green
-                        global discovered_counter
-                        discovered_counter += 1
-                        already_merged.remove(already_merged[i])"""
-
-                avg_x = sum(q.x for q in group) / len(group)
-                avg_y = sum(q.y for q in group) / len(group)
-
-                #print("Merged atoms: " + group[0].name + " and " + group[1].name)
-                #print("Merged :", name)
-
-                particles.append(Atom(name, avg_x, avg_y))
-
-                new_discovery = Discoveries(name)
-                if not atoms_discovered[atoms_symbols.index(name)]:
-                    atoms_discovered[atoms_symbols.index(name)] = True
-                    new_discovery.is_visible = True
-                    popup.append(new_discovery)
-
-                for q in group:
-                    q.destroy = True
-                    remove_atom(q)
-
-            break
 
 @staticmethod
 def add_atom(name, x, y):
@@ -310,10 +350,12 @@ def remove_atom(atom):
     particles.remove(atom)
 
 # ---------------- INIT ----------------
-for _ in range(int(NUM_QUARKS/2)):
-    particles.append(Atom("u", random.uniform(0, WIDTH), random.uniform(0, HEIGHT)))
-for _ in range(int(NUM_QUARKS / 2)):
-    particles.append(Atom("d", random.uniform(0, WIDTH), random.uniform(0, HEIGHT)))
+for i in range(NUM_QUARKS):
+    name = "u" if i % 2 == 0 else "d"
+    distance = random.uniform(0, BORDER_RADIUS)
+    angle = random.uniform(0, 2 * math.pi)
+    add_atom(name, WIDTH/2 + distance * math.cos(angle), HEIGHT/2 + distance * math.sin(angle))
+
 
 #------------- COLLECTION --------------
 book_img = pygame.image.load('book.png').convert_alpha()
@@ -328,7 +370,7 @@ while running:
     screen.fill((15, 15, 30))
     # Draw circular border centered on camera (screen center) and scaled by zoom
     
-    center = world_to_screen((int(WIDTH/2), int(HEIGHT/2)))
+    center = world_to_screen((WIDTH/2, HEIGHT/2))
     radius = max(1, int(BORDER_RADIUS * camera_zoom))
     border_thickness = max(1, int(BORDER_THICKNESS * camera_zoom))
     
@@ -343,7 +385,7 @@ while running:
 
         for popups in popup:
             popups.handle_exit(event)
-        
+
         for card in cards:
             card.handle_exit(event)
 
@@ -357,20 +399,15 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             # Check if the click happened inside the book's rectangle
             if book_img.get_rect().collidepoint(event.pos):
-                if not collection:
-                    collection = show_collection(screen)
-                elif collection:
-                    collection = not show_collection(screen)
+                show_collection(screen)
+                collection = not collection
         
         if event.type == pygame.MOUSEBUTTONDOWN and collection:
             for rects in badges_rects:
-                if rects == None: continue
-                else:
-                    pygame.draw.rect(screen, (255, 0, 0), rects, 2)
-                    if rects.collidepoint(event.pos):
-                        show_card = Discoveries(atoms_symbols[badges_rects.index(rects)], 150, 300)
-                        show_card.is_visible = True
-                        cards.append(show_card)
+                if rects is not None and rects.collidepoint(event.pos):
+                    show_card = FusionCards.Popup(atoms_symbols[badges_rects.index(rects)], 150, 300)
+                    show_card.is_visible = True
+                    cards.append(show_card)
 
 
         # Camera Controls
@@ -380,7 +417,7 @@ while running:
         if keys[pygame.K_r]:
             camera_zoom = DEFAULT_ZOOM
         
-        #toggle between wether the camera follows your mouse or not
+        #toggle between whether the camera follows your mouse or not
         if keys[pygame.K_f]:
             if follow_mode:
                 follow_mode = False
@@ -416,32 +453,15 @@ while running:
     if gravity_active:
         gravity_pos = screen_to_world(pygame.mouse.get_pos())
 
-    # ---------Creates sound when hold mouse pad-----------
-
-    mouse_buttons = pygame.mouse.get_pressed()
-
-    if mouse_buttons[0]:  # If Left Mouse is held down
-        if not pygame.mixer.get_busy():  # Only play if sound isn't already playing
-            # -1 tells it to loop until we call stop()
-            channel = tone.play(loops=-1)
-    else:
-        # If the mouse is released, stop the sound
-        tone.fadeout(500)
-        '''if channel:
-            channel.stop()'''
 
     for p in particles:
-        if p.destroy:
-            particles.remove(p)
-            continue
         p.draw(screen)
         # if isinstance(p, Nucleon) and p.name == "H-1":
             # apply_cluster_attraction(p, particles)
 
-    handle_collisions()
-
     for popups in popup:
-        popups.draw(screen)
+        if popups.is_visible:
+            popups.draw(screen)
 
 
     if collection:
@@ -449,6 +469,20 @@ while running:
         for card in cards:
             card.draw(screen)
     else:
+        # ---------Creates sound when hold mouse pad-----------
+        mouse_buttons = pygame.mouse.get_pressed()
+        if mouse_buttons[0]:  # If Left Mouse is held down
+            if not pygame.mixer.get_busy():  # Only play if sound isn't already playing
+                # -1 tells it to loop until we call stop()
+                channel = tone.play(loops=-1)
+        else:
+            # If the mouse is released, stop the sound
+            tone.fadeout(500)
+            '''if channel:
+                channel.stop()'''
+
+        handle_collisions()
+
         for p in particles:
             p.update()
 
@@ -456,11 +490,12 @@ while running:
             mx, my = world_to_screen(gravity_pos)
             outer_radius = max(1, int(25 * camera_zoom))
             inner_radius = max(1, int(5 * camera_zoom))
-            pygame.draw.circle(screen, (180, 180, 255), (int(mx), int(my)), outer_radius, 2)
-            pygame.draw.circle(screen, (120, 120, 255), (int(mx), int(my)), inner_radius)
+            pygame.draw.circle(screen, (180, 180, 255), (mx, my), outer_radius, 2)
+            pygame.draw.circle(screen, (120, 120, 255), (mx, my), inner_radius)
 
-    check_quarks_merging()
-    check_atom_merging()
+        check_quarks_merging()
+        check_atom_merging()
+
     screen.blit(book_img, (20,20))
 
     fps_value = clock.get_fps()

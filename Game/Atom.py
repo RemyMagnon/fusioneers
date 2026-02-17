@@ -3,7 +3,7 @@ import pygame
 import math
 from Constants import *
 import radioactivedecay as rd
-import numpy as np
+import FusionCards
 
 atoms_symbols = [
         "u",
@@ -36,6 +36,40 @@ atoms_symbols = [
         "F-19",
         "F-18",
         "Ne-20"
+]
+
+
+atoms_label = [
+        "u",
+        "d",
+        "n",
+        "H1",
+        "H 2",
+        "H 3",
+        "He 3",
+        "He 4",
+        "Li 6",
+        "Li 7",
+        "Be 7",
+        "B 10",
+        "Be 10",
+        "B 11",
+        "C 10",
+        "C 11",
+        "N 13",
+        "O 14",
+        "C 12",
+        "C 13",
+        "C 14",
+        "N 14",
+        "N 15",
+        "O 16",
+        "O 15",
+        "O 17",
+        "O 18",
+        "F 19",
+        "F 18",
+        "Ne 20"
 ]
 
 
@@ -74,8 +108,8 @@ atoms_name = [
 
 
 atoms_size = [
-    2.5,
-    2.5,
+    1.5,
+    1.5,
     5.0,
     5.0,
     10.7,
@@ -140,71 +174,50 @@ atoms_color = [
     (179, 227, 245)
 ]
 
+atoms_text_color = []
+for color in atoms_color:
+    if sum(color) < 400:
+        atoms_text_color.append((255, 255, 255))
+    else:
+        atoms_text_color.append((0, 0, 0))
 
-class Atom():
-    def __init__(self, name, x=random.uniform(0, WIDTH), y=random.uniform(0, HEIGHT)):
-        self.vx = random.uniform(-1, 1)
-        self.vy = random.uniform(-1, 1)
-        self.name = name
-        if name not in atoms_symbols:
-            raise TypeError("Not a valid atom! Check Atom.py for a full list.")
-        elif name == "u":
-            self.type = "quark"
-            self.identity = "up quark"
-            self.id = 2*10**6/3 + 10**3/3
-            self.proton_number = 0
-            self.neutron_number = 0
-            self.half_life = float("inf")
-            self.decays_into = []
-            self.decay_type = []
-            self.info = "Placeholder text."
-            self.index = atoms_symbols.index(name)
-        elif name == "d":
-            self.type = "quark"
-            self.identity = "down quark"
-            self.id = -10**6/3 + 10**3/3
-            self.proton_number = 0
-            self.neutron_number = 0
-            self.half_life = float("inf")
-            self.decays_into = []
-            self.decay_type = []
-            self.info = "Placeholder text."
-            self.index = atoms_symbols.index(name)
-        elif name == "n":
-            self.type = "neutron"
-            self.identity = "neutron"
-            self.id = 10000
-            self.proton_number = 0
-            self.neutron_number = 0
-            self.half_life = 20
-            self.decays_into = ["H-1"]
-            self.decay_type = []
-            self.info = "Placeholder text."
-            self.index = atoms_symbols.index(name)
-        else:
-            self.type = "atom"
-            self.identity = rd.Nuclide(name)
-            self.id = self.identity.id
-            self.proton_number = self.identity.Z
-            self.neutron_number = self.identity.A - self.identity.Z
-            self.decays_into = self.identity.progeny()
-            self.decay_type = self.identity.decay_modes()
-            self.info = "Placeholder text."
-            self.index = atoms_symbols.index(name)
-            self.half_life = np.log(self.identity.half_life())
 
+class Atom:
+    def __init__(self, name, x, y):
         self.x = x
         self.y = y
         self.vx = random.uniform(-1, 1)
         self.vy = random.uniform(-1, 1)
+        self.name = name
+        self.index = atoms_symbols.index(name)
         self.radius = atoms_size[self.index] * 3
-        self.destroy = False
+        if name == "u":
+            self.id = 2*10**6/3 + 10**3/3
+            self.half_life = float("inf")
+            self.decays_into = []
+        elif name == "d":
+            self.id = -10**6/3 + 10**3/3
+            self.half_life = float("inf")
+            self.decays_into = []
+        elif name == "n":
+            self.id = 10000
+            self.half_life = 20
+            self.decays_into = ["H-1"]
+        else:
+            self.id = rd.Nuclide(name).id
+            self.half_life = math.log(rd.Nuclide(name).half_life())
+            self.decays_into = rd.Nuclide(name).progeny()
+
 
     def decay(self):
         if len(self.decays_into) > 0:
             import Game
             Game.add_atom(self.decays_into[0], self.x, self.y)
             Game.remove_atom(self)
+            discovery = FusionCards.new_discovery(self.decays_into[0])
+            if discovery is not None:
+                Game.popup.append(discovery)
+
 
     def update(self):
         self.apply_gravity()
@@ -214,10 +227,10 @@ class Atom():
             self.vx *= scale_factor
             self.vy *= scale_factor
 
-        self.x += self.vx
-        self.y += self.vy
+        self.x += self.vx + random.uniform(-20, 20) * (math.exp(-self.half_life) + 0.05)
+        self.y += self.vy + random.uniform(-20, 20) * (math.exp(-self.half_life) + 0.05)
 
-        # Bounce off circular world border centered on the camera
+        # Bounce off circular world border
         # Distance from particle to world center
         dx = self.x - WIDTH / 2
         dy = self.y - HEIGHT / 2
@@ -251,82 +264,37 @@ class Atom():
             dy = Game.gravity_pos[1] - self.y
             dist = math.hypot(dx, dy)
             if dist > 5:
-                force = GRAVITY_STRENGTH * GRAVITY(dist)
+                force = GRAVITY_STRENGTH * 2.72**(-dist / GRAVITY_RANGE) / dist
                 self.vx += (dx / dist) * force
                 self.vy += (dy / dist) * force
 
 
     def draw(self, surface):
         import Game
-        if self.half_life == float('inf') or Game.collection == True:
-            x_offset = 0
-            y_offset = 0
-        else:
-            x_offset = random.randint(-10, 10) * (np.exp(-self.half_life)+0.1)
-            y_offset = random.randint(-10, 10) * (np.exp(-self.half_life)+0.1)
         sx, sy = Game.world_to_screen((self.x, self.y))
         radius = max(1, int(atoms_size[self.index] * 3 * Game.camera_zoom))
-        pygame.draw.circle(surface, atoms_color[self.index], (int(sx+x_offset), int(sy+y_offset)), radius)
-        if atoms_color[self.index][0] + atoms_color[self.index][1] + atoms_color[self.index][2] < 400:
-            color = (255, 255, 255)
-        else:
-            color = (0, 0, 0)
+        pygame.draw.circle(surface, atoms_color[self.index], (sx, sy), radius)
 
-        font_size = max(8, int(20 * Game.camera_zoom))
-        dynamic_font = pygame.font.SysFont(None, font_size)
-
-        text = dynamic_font.render(atoms_symbols[self.index], True, color)
-        rect = text.get_rect(center=(sx+x_offset, sy+y_offset))
-        surface.blit(text, rect)
+        if Game.camera_zoom > 0.8 and not self.is_quark():
+            text = Game.font.render(atoms_label[self.index], True, atoms_text_color[self.index])
+            rect = text.get_rect(center=(sx, sy))
+            surface.blit(text, rect)
 
 
-    @staticmethod
-    def merge(a1, a2):
-        if not isinstance(a2, Atom):
-            return None
-        if (a2.type == "atom" or a2.type == "neutron") and (a1.type == "atom" or a1.type == "neutron"):
+    def merge(self, other):
+        if self.is_quark and other.is_quark:
             try:
-                sum = str(rd.Nuclide(a1.id + a2.id))
+                str_sum = str(rd.Nuclide(self.id + other.id))
             except ValueError:
                 return None
-            str_start = sum.index("Nuclide: ")
-            str_end = sum.index(", decay")
-            return sum[str_start + 9:str_end]
-        else:
-            print("Not an atom or neutron!")
-            return None
-
-    @staticmethod 
-    def protonmerge(atom, proton):
-        if not isinstance(proton, Atom):
-            return None
-        elif (atom.type == "atom" and proton.type == "proton") or (atom.type == "proton" and proton.type == "atom"):
-            ID = atom.id + proton.id
-            sum = str(rd.Nuclide(ID))
-            str_start = sum.index("Nuclide: ")
-            str_end = sum.index(", decay")
-            sum = sum[str_start + 9:str_end]
-            return sum
-        else: 
-            return None
-    
-    def quarkmerge(self, other1, other2):
-        if not isinstance(other1, Atom) or not isinstance(other2, Atom):
-            return None
-        elif self.type and other1.type and other2.type == "quark":
-            ID = self.id + other1.id + other2.id
-            if ID == 10010000 or 10000000:
-                sum = str(rd.Nuclide(ID))
-                str_start = sum.index("Nuclide: ")
-                str_end = sum.index(", decay")
-                sum = sum[str_start + 9:str_end]
-                return Atom(sum)
-            else: 
-                return None
-        else: 
-            return None
+            str_start = str_sum.index("Nuclide: ")
+            str_end = str_sum.index(", decay")
+            return str_sum[str_start + 9:str_end]
+        return None
 
    
     def __str__(self):
-        return self.name  
+        return self.name
 
+    def is_quark(self):
+        return self.name == "u" or self.name == "d"
