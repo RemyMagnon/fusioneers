@@ -186,8 +186,8 @@ class Atom:
     def __init__(self, name, x, y):
         self.x = x
         self.y = y
-        self.vx = random.uniform(-1, 1)
-        self.vy = random.uniform(-1, 1)
+        self.vx = random.choice([-1, 1]) * random.uniform(0.5, 1.0)
+        self.vy = random.choice([-1, 1]) * random.uniform(0.5, 1.0)
         self.name = name
         self.index = atoms_symbols.index(name)
         self.radius = atoms_size[self.index] * 3
@@ -195,18 +195,22 @@ class Atom:
             self.id = 2*10**6/3 + 10**3/3
             self.half_life = float("inf")
             self.decays_into = []
+            self.mass = 0.00236
         elif name == "d":
             self.id = -10**6/3 + 10**3/3
             self.half_life = float("inf")
             self.decays_into = []
+            self.mass = 0.00505
         elif name == "n":
             self.id = 10000
             self.half_life = 20
             self.decays_into = ["H-1"]
+            self.mass = 1.00866
         else:
             self.id = rd.Nuclide(name).id
             self.half_life = math.log(rd.Nuclide(name).half_life())
             self.decays_into = rd.Nuclide(name).progeny()
+            self.mass = rd.Nuclide(name).atomic_mass
 
 
     def decay(self):

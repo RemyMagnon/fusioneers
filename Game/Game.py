@@ -139,10 +139,13 @@ def resolve_collision(a, b):
         impact_speed = dvx * nx + dvy * ny
 
         impulse = -impact_speed
-        a.vx += impulse * nx
-        a.vy += impulse * ny
-        b.vx -= impulse * nx
-        b.vy -= impulse * ny
+        ratio_a = b.mass / (a.mass + b.mass)
+        ratio_b = a.mass / (a.mass + b.mass)
+
+        a.vx += impulse * nx * ratio_a
+        a.vy += impulse * ny * ratio_a
+        b.vx -= impulse * nx * ratio_b
+        b.vy -= impulse * ny * ratio_b
 
 
 def handle_collisions():
