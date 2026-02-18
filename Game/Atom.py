@@ -203,7 +203,7 @@ class Atom:
             self.mass = 0.00505
         elif name == "n":
             self.id = 10000
-            self.half_life = 20
+            self.half_life = math.log(609.8)
             self.decays_into = ["H-1"]
             self.mass = 1.00866
         else:
